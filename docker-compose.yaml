@@ -1,0 +1,122 @@
+#
+# Copyright IBM Corp All Rights Reserved
+#
+# SPDX-License-Identifier: Apache-2.0 185.244.212.1 - 185.244.212.250
+#
+version: '2'
+
+networks:
+  basic:
+
+services:
+  orderer.universe.at:
+    container_name: orderer.universe.at
+    image: hyperledger/fabric-orderer
+    environment:
+      - FABRIC_LOGGING_SPEC=info
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/msp/orderer/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
+    command: orderer
+    ports:
+      - 7050:7050
+    volumes:
+        - ./config/:/etc/hyperledger/configtx
+        - ./crypto-config/ordererOrganizations/universe.at/orderers/orderer.universe.at/:/etc/hyperledger/msp/orderer
+        - ./crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/:/etc/hyperledger/msp/peerAthen
+    networks:
+      - basic
+
+  peer0.athen.universe.at:
+    container_name: peer0.athen.universe.at
+    image: hyperledger/fabric-peer
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer0.athen.universe.at
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_CHAINCODE_LOGGING_LEVEL=info
+      - CORE_PEER_LOCALMSPID=AthenMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_ADDRESS=peer0.athen.universe.at:7051
+      # # the following setting starts chaincode containers on the same
+      # # bridge network as the peers
+      # # https://docs.docker.com/compose/networking/
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_basic
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    # command: peer node start --peer-chaincodedev=true
+    ports:
+      - 7051:7051
+      - 7053:7053
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp:/etc/hyperledger/msp/peer
+      - ./crypto-config/peerOrganizations/athen.universe.at/users:/etc/hyperledger/msp/users
+      - ./config:/etc/hyperledger/configtx
+    depends_on:
+      - orderer.universe.at
+    networks:
+      - basic
+
+  peer1.athen.universe.at:
+    container_name: peer1.athen.universe.at
+    image: hyperledger/fabric-peer
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer1.athen.universe.at
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_CHAINCODE_LOGGING_LEVEL=info
+      - CORE_PEER_LOCALMSPID=AthenMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/msp/peer/
+      - CORE_PEER_ADDRESS=peer1.athen.universe.at:7051
+      # # the following setting starts chaincode containers on the same
+      # # bridge network as the peers
+      # # https://docs.docker.com/compose/networking/
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_basic
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    # command: peer node start --peer-chaincodedev=true
+    ports:
+      - 8051:7051
+      - 8053:7053
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/msp:/etc/hyperledger/msp/peer
+      - ./crypto-config/peerOrganizations/athen.universe.at/users:/etc/hyperledger/msp/users
+      - ./config:/etc/hyperledger/configtx
+    depends_on:
+      - orderer.universe.at
+    networks:
+      - basic
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools
+    tty: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=info
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.athen.universe.at:7051
+      - CORE_PEER_LOCALMSPID=AthenMSP
+      - CORE_PEER_MSPCONFIGPATH=/root/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp
+      - CORE_CHAINCODE_KEEPALIVE=10
+    working_dir: /root
+    command: /bin/bash
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./chaincode/:/opt/gopath/src/
+      #- ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto-config/
+      #- ./config:/opt/gopath/src/github.com/hyperledger/fabric/peer/config/
+      - ./crypto-config:/root/crypto-config/
+      - ./config:/root/config/
+    networks:
+      - basic
+    depends_on:
+      - orderer.universe.at
+      - peer0.athen.universe.at
+      - peer1.athen.universe.at
