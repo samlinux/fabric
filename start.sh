@@ -3,14 +3,18 @@
 # Exit on first error, print all commands.
 set -ev
 
+# in the case if you would like to change the project-foldername 
+export COMPOSE_PROJECT_NAME=fabric
+
 # we first stop the network
 docker-compose down
 
 # start the network
 docker-compose up -d
 
-export CORE_PEER_MSPCONFIGPATH="CORE_PEER_MSPCONFIGPATH=/root/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp"
+export CORE_PEER_MSPCONFIGPATH="/root/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp"
 
+echo $CORE_PEER_MSPCONFIGPATH
 # create channel and join peer0
 docker exec -e $CORE_PEER_MSPCONFIGPATH cli peer channel create -c samlinux -f ./config/channel.tx -o orderer.universe.at:7050
 docker exec -e $CORE_PEER_MSPCONFIGPATH cli peer channel join -b samlinux.block

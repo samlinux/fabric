@@ -1,5 +1,6 @@
 
 docker-compose -f docker-compose-ca.yaml down  
+sudo find fabca/crypto-config -maxdepth 10 -type f -exec rm -fv {} \;
 
 # start CA mit init Parameter
 docker-compose -f docker-compose-ca.yaml up
