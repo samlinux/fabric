@@ -1,14 +1,18 @@
 # fabric
-## fabric learning version
+## fabric learning version 
 This fabric network is based on Fabric v1.4.4
+
+## Development setup
+Use Visual Studio Code and Remote Development Extension.
 
 ### start cryptogen version
 
-1. mkdir {config,crypto-config}
-2. ./generate.sh (create crypto material)
-3. ./start.sh (start and install the mini network)
-4. docker-compose down (stop the network)
-5. docker-compose up (restart the network)
+1. rm -R {config,crypto-config}
+2. mkdir {config,crypto-config}
+3. ./generate.sh (create crypto material)
+4. ./start.sh (start and install the mini network)
+5. docker-compose down (stop the network)
+6. docker-compose up (restart the network)
 
 ### start fabca version
 1. mkdir fabca

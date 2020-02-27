@@ -1,0 +1,64 @@
+version: '2'
+networks: 
+  basic: 
+
+services:
+  ca-tls.universe.at:
+    container_name: ca-tls.universe.at
+    image: hyperledger/fabric-ca:1.4.4
+    command: sh -c 'fabric-ca-server start -d -b tls-ca-admin:tls-ca-adminpw --port 7052'
+    environment:
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_CA_NAME=ca-tls.universe.at
+      - FABRIC_CA_SERVER_CSR_CN=ca-tls.universe.at
+      - FABRIC_CA_SERVER_CSR_HOSTS=0.0.0.0
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca/ca-tls.universe.at-key.pem
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca/ca-tls.universe.at-cert.pem
+      - FABRIC_CA_SERVER_DEBUG=true
+    volumes:
+      - ./fabca/crypto-config/ca-tls/universe.at:/etc/hyperledger/fabric-ca
+    networks:
+      - basic
+    ports:
+      - 7052:7052
+      
+  ca-orderer.universe.at:
+    container_name: ca-orderer.universe.at
+    image: hyperledger/fabric-ca:1.4.4
+    command: sh -c 'fabric-ca-server start -d -b ca-orderer-admin:ca-orderer-adminpw --port 7053'
+    environment:
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_CA_NAME=ca-orderer.universe.at
+      - FABRIC_CA_SERVER_CSR_CN=ca-orderer.universe.at
+      - FABRIC_CA_SERVER_CSR_HOSTS=0.0.0.0
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca/ca-orderer.universe.at-key.pem
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca/ca-orderer.universe.at-cert.pem
+      - FABRIC_CA_SERVER_DEBUG=true
+    volumes:
+      - ./fabca/crypto-config/ca-orderer/universe.at:/etc/hyperledger/fabric-ca
+    networks:
+      - basic
+    ports:
+      - 7053:7053
+
+  ca-athen.universe.at:
+    container_name: ca-athen.universe.at
+    image: hyperledger/fabric-ca:1.4.4
+    command: sh -c 'fabric-ca-server start -d -b ca-athen-admin:ca-athen-adminpw --port 7054'
+    environment:
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_CA_NAME=ca-athen.universe.at
+      - FABRIC_CA_SERVER_CSR_CN=ca-athen.universe.at
+      - FABRIC_CA_SERVER_CSR_HOSTS=0.0.0.0
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca/ca-athen.universe.at-key.pem
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca/ca-athen.universe.at-cert.pem
+      - FABRIC_CA_SERVER_DEBUG=true
+    volumes:
+      - ./fabca/crypto-config/ca-athen/universe.at:/etc/hyperledger/fabric-ca
+    networks:
+      - basic
+    ports:
+      - 7054:7054

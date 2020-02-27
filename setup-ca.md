@@ -1,116 +1,135 @@
 
-docker-compose -f docker-compose-ca.yaml down  
+docker-compose -f docker-compose-ca.yaml down 
+rm -R fabca 
+mkdir fabca
+sudo cp -R crypto-config fabca
 sudo find fabca/crypto-config -maxdepth 10 -type f -exec rm -fv {} \;
 
-# start CA mit init Parameter
-docker-compose -f docker-compose-ca.yaml up
+# Setup TLS CA
+docker-compose -f docker-compose-cas.yaml up ca-tls.universe.at
 
-# copy ca key
-ll fabca/crypto-config/tlsca-server/universe.at/msp/keystore/
-sudo cp fabca/crypto-config/tlsca-server/universe.at/msp/keystore/02**_sk fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-key.pem
+## Enroll TLS CA’s Admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-tls/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ca-tls/universe.at/admin
 
-# start CA mit start Parameter
-docker-compose -f docker-compose-ca.yaml up
-
-# copy CA Keys
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/ca/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/tlscacerts/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/cacerts/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/tlscacerts/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/tlscacerts/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/msp/tlscacerts/
-
-sudo cp fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-key.pem fabca/crypto-config/peerOrganizations/athen.universe.at/ca/
-
-
-export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/tlsca-server/universe.at/tlsca.universe.at-cert.pem
-export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/tlsca-server/universe.at/admin
-# Enroll TLS CA’s Admin
 fabric-ca-client enroll -d -u https://tls-ca-admin:tls-ca-adminpw@0.0.0.0:7052
-
-
-# register 
 fabric-ca-client register -d --id.name peer0.athen.universe.at --id.secret peer0PW --id.type peer -u https://0.0.0.0:7052
 fabric-ca-client register -d --id.name peer1.athen.universe.at --id.secret peer1PW --id.type peer -u https://0.0.0.0:7052
+fabric-ca-client register -d --id.name orderer1-org0 --id.secret ordererPW --id.type orderer -u https://0.0.0.0:7052
 
-fabric-ca-client register -d --id.name Admin@athen.universe.at --id.secret po1AdminPW --id.type admin --id.attrs "hf.Registrar.Roles=client,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert" -u https://0.0.0.0:7052
-fabric-ca-client register -d --id.name User1@athen.universe.at --id.secret po1UserPW --id.type user -u https://0.0.0.0:7052
+# start Orderer CA
+docker-compose -f docker-compose-cas.yaml up ca-orderer.universe.at
 
-# Enroll peers
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp
-fabric-ca-client enroll -u https://peer0.athen.universe.at:peer0PW@0.0.0.0:7052
+## Enroll Orderer Org’s CA Admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-orderer/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ca-orderer/universe.at/admin
 
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/msp
-fabric-ca-client enroll -u https://peer1.athen.universe.at:peer1PW@0.0.0.0:7052
+fabric-ca-client enroll -d -u https://ca-orderer-admin:ca-orderer-adminpw@0.0.0.0:7053
+fabric-ca-client register -d --id.name orderer1-universe.at --id.secret ordererpw --id.type orderer -u https://0.0.0.0:7053
+fabric-ca-client register -d --id.name admin-orderer1-universe.at --id.secret org0adminpw --id.type admin --id.attrs "hf.Registrar.Roles=client,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert" -u https://0.0.0.0:7053
 
-# Enroll and Get the TLS cryptographic material for the peer. 
-# This requires another enrollment,
-# Enroll against the tls profile on the TLS CA. 
 
-export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/tlsca-server/universe.at/admin
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/
-export FABRIC_CA_CLIENT_TLS_CERTFILES=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/tlscacerts/tlsca.universe.at-cert.pem
+# start athen CA
+docker-compose -f docker-compose-cas.yaml up ca-athen.universe.at
+
+## Enroll athen identities
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-athen/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ca-athen/universe.at/admin
+
+fabric-ca-client enroll -d -u https://ca-athen-admin:ca-athen-adminpw@0.0.0.0:7054
+fabric-ca-client register -d --id.name peer0.athen.universe.at --id.secret peer0PW --id.type peer -u https://0.0.0.0:7054
+fabric-ca-client register -d --id.name peer1.athen.universe.at --id.secret peer1PW --id.type peer -u https://0.0.0.0:7054
+fabric-ca-client register -d --id.name admin-athen.universet.at --id.secret athenAdminPW --id.type user -u https://0.0.0.0:7054
+fabric-ca-client register -d --id.name user1-athen.universet.at --id.secret user1UserPW --id.type user -u https://0.0.0.0:7054
+
+# Setup Peers
+## Setup athen peers
+
+### Peer 0 
+#### Identity
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-athen/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at
+
+fabric-ca-client enroll -d -u https://peer0.athen.universe.at:peer0PW@0.0.0.0:7054
+
+#### TLS Cert
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-tls/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls
 
 fabric-ca-client enroll -d -u https://peer0.athen.universe.at:peer0PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer0.athen.universe.at
 
-# rename TLS 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/keystore/*_sk fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.key
+mv fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/msp/keystore/*_sk fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/msp/keystore/key.pem
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/signcerts/cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.crt
+### Peer 1 
+#### Identity
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-athen/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/tlscacerts/tls-0-0-0-0-7052.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/ca.crt
-
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls
-export FABRIC_CA_CLIENT_TLS_CERTFILES=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/msp/tlscacerts/tlsca.universe.at-cert.pem
+fabric-ca-client enroll -d -u https://peer1.athen.universe.at:peer1PW@0.0.0.0:7054
+ 
+#### TLS Cert
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-tls/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls
 
 fabric-ca-client enroll -d -u https://peer1.athen.universe.at:peer1PW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts peer1.athen.universe.at
 
-# rename TLS 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/keystore/*_sk fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/server.key
+mv fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/msp/keystore/*_sk fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/msp/keystore/key.pem
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/signcerts/cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/server.crt
+## Enroll athen.universe.at Admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-athen/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at
+export FABRIC_CA_CLIENT_MSPDIR=msp
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/tlscacerts/tls-0-0-0-0-7052.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/tls/ca.crt
+fabric-ca-client enroll -d -u https://admin-athen.universet.at:athenAdminPW@0.0.0.0:7054
 
+cp fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp/signcerts/cert.pem fabca/crypto-config/
+peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/admincerts/admin-athen-cert.pem
 
-# ------------------------------------------------------------------------------------------------------
-# Enroll and Setup peer org Admin User
-# The admin identity is responsible for activities such as # installing and instantiating chaincode. 
-# The commands below assumes that this is being executed on Peer1's host machine.
-# Fabric does this by Creating folder user/Admin@po1.fabric.com
-# ------------------------------------------------------------------------------------------------------
-export FABRIC_CA_CLIENT_TLS_CERTFILES=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/ca/tlsca.universe.at-cert.pem
-export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/tlsca-server/universe.at/admin
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp
-fabric-ca-client enroll -d -u https://Admin@athen.universe.at:po1AdminPW@0.0.0.0:7052
+cp fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp/signcerts/cert.pem fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer1.athen.universe.at/msp/admincerts/admin-athen-cert.pem
 
-# AdminCerts
-fabric-ca-client identity list
-fabric-ca-client certificate list --id Admin@athen.universe.at --store $PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp/admincerts
+# Launch Athen's Peers
+docker-compose -f docker-compose-ca-mode.yaml up peer0.athen.universe.at peer1.athen.universe.at
 
-# Enroll user
-export FABRIC_CA_CLIENT_MSPDIR=$PWD/fabca/crypto-config/peerOrganizations/athen.universe.at/users/User1@athen.universe.at/msp
-fabric-ca-client enroll -d -u https://User1@athen.universe.at:po1UserPW@0.0.0.0:7052
+# Setup Orderer
 
-mkdir fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/tls
-mkdir fabca/crypto-config/peerOrganizations/athen.universe.at/users/User1@athen.universe.at/tls
+## Enroll Orderer
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-orderer/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ordererOrganizations/universe.at/
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/ca.crt fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/tls
+fabric-ca-client enroll -d -u https://orderer1-universe.at:ordererpw@0.0.0.0:7053
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.crt fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/tls
+## Enroll TLS
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-tls/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_MSPDIR=tlsca
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.key fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/tls
-#---
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/ca.crt fabca/crypto-config/peerOrganizations/athen.universe.at/users/User1@athen.universe.at/tls
+fabric-ca-client enroll -d -u https://orderer1-org0:ordererPW@0.0.0.0:7052 --enrollment.profile tls --csr.hosts orderer1-org0
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.crt fabca/crypto-config/peerOrganizations/athen.universe.at/users/User1@athen.universe.at/tls
+mv fabca/crypto-config/ordererOrganizations/universe.at/tlsca/keystore/*_sk fabca/crypto-config/ordererOrganizations/universe.at/tlsca/keystore/key.pem
 
-sudo cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.key fabca/crypto-config/peerOrganizations/athen.universe.at/users/User1@athen.universe.at/tls
+## Enroll Orderer Org0’s Admin
+export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-orderer/universe.at/tls-cert.pem
+export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ordererOrganizations/universe.at/users/Admin@universe.at
+export FABRIC_CA_CLIENT_MSPDIR=msp
+fabric-ca-client enroll -d -u https://admin-orderer1-universe.at:org0adminpw@0.0.0.0:7053
 
-<!---- -->
-cp fabca/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp/admincerts/Admin@athen.universe.at.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/admincerts/
+cp fabca/crypto-config/ordererOrganizations/universe.at/users/Admin@universe.at/msp/signcerts/cert.pem fabca/crypto-config/ordererOrganizations/universe.at/msp/admincerts/orderer-admin-cert.pem
+
+<!-- create config.yaml in peerOrganizations/msp -->
+<!-- create config.yaml in peerOrganizations/users/Admin@athen.universe.at/msp -->
+cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/cacerts/0-0-0-0-7054.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/cacerts/ca.athen.universe.at-cert.pem
+
+# Create Genesis Block and Channel Transaction
+configtxgen -profile OneOrgOrdererGenesis -outputBlock $PWD/fabca/config/genesis.block -channelID orderersyschannel
+
+configtxgen -profile OneOrgChannel -outputCreateChannelTx $PWD/fabca/config/channel.tx -channelID samlinux
+
+configtxgen -profile OneOrgChannel -outputAnchorPeersUpdate ./config/AthenMSPanchors.tx -channelID samlinux -asOrg AthenMSP
+
+# Launch Orderer and peers
+docker-compose -f docker-compose-ca-mode.yaml up 
+
+# Create and Join Channel
+
+docker exec -it cli bash
+export CORE_PEER_MSPCONFIGPATH="/root/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp"
+peer channel create -c samlinux -f ./config/channel.tx -o orderer.universe.at:7050

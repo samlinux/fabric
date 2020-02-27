@@ -3,7 +3,9 @@ export ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/orde
 
 # query peer 0
 export CORE_PEER_TLS_CERT_FILE="/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.crt"
+
 export CORE_PEER_TLS_KEY_FILE="/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/tls/server.key"
+
 export CORE_PEER_ADDRESS="peer0.athen.universe.at:7051"
 
 ## query chaincode on peer 0
