@@ -1,14 +1,19 @@
-
+# Preparations
+```bash
 docker-compose -f docker-compose-ca.yaml down 
 rm -R fabca 
 mkdir fabca
 sudo cp -R crypto-config fabca
 sudo find fabca/crypto-config -maxdepth 10 -type f -exec rm -fv {} \;
+```
 
 # Setup TLS CA
+```bash
 docker-compose -f docker-compose-cas.yaml up ca-tls.universe.at
+```
 
 ## Enroll TLS CA’s Admin
+```bash
 export FABRIC_CA_CLIENT_TLS_CERTFILES=${PWD}/fabca/crypto-config/ca-tls/universe.at/tls-cert.pem
 export FABRIC_CA_CLIENT_HOME=$PWD/fabca/crypto-config/ca-tls/universe.at/admin
 
@@ -16,6 +21,7 @@ fabric-ca-client enroll -d -u https://tls-ca-admin:tls-ca-adminpw@0.0.0.0:7052
 fabric-ca-client register -d --id.name peer0.athen.universe.at --id.secret peer0PW --id.type peer -u https://0.0.0.0:7052
 fabric-ca-client register -d --id.name peer1.athen.universe.at --id.secret peer1PW --id.type peer -u https://0.0.0.0:7052
 fabric-ca-client register -d --id.name orderer1-org0 --id.secret ordererPW --id.type orderer -u https://0.0.0.0:7052
+```
 
 # start Orderer CA
 docker-compose -f docker-compose-cas.yaml up ca-orderer.universe.at
