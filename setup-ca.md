@@ -139,8 +139,8 @@ fabric-ca-client enroll -d -u https://admin-orderer1-universe.at:org0adminpw@0.0
 
 cp fabca/crypto-config/ordererOrganizations/universe.at/users/Admin@universe.at/msp/signcerts/cert.pem fabca/crypto-config/ordererOrganizations/universe.at/msp/admincerts/orderer-admin-cert.pem
 
-<!-- create config.yaml in peerOrganizations/msp -->
-<!-- create config.yaml in peerOrganizations/users/Admin@athen.universe.at/msp -->
+# create config.yaml in peerOrganizations/msp 
+# create config.yaml in peerOrganizations/users/Admin@athen.universe.at/msp -->
 cp fabca/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/cacerts/0-0-0-0-7054.pem fabca/crypto-config/peerOrganizations/athen.universe.at/msp/cacerts/ca.athen.universe.at-cert.pem
 
 ```
