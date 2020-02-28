@@ -26,7 +26,7 @@ services:
       - 7050:7050
     volumes:
         - ./fabca/config/:/etc/hyperledger/configtx
-        - ./fabca/crypto-config/ordererOrganizations/universe.at:/etc/hyperledger/msp/orderer
+        - ./fabca/crypto-config/ordererOrganizations/universe.at/:/etc/hyperledger/msp/orderer
     networks:
       - basic
 
@@ -117,7 +117,7 @@ services:
       - CORE_PEER_ID=cli
       - CORE_PEER_ADDRESS=peer0.athen.universe.at:7051
       - CORE_PEER_LOCALMSPID=AthenMSP
-      - CORE_PEER_MSPCONFIGPATH=/root/crypto-config/peerOrganizations/athen.universe.at/users/Admin@athen.universe.at/msp
+      - CORE_PEER_MSPCONFIGPATH=/root/crypto-config/peerOrganizations/athen.universe.at/peers/peer0.athen.universe.at/msp/
       - CORE_CHAINCODE_KEEPALIVE=10
     working_dir: /root
     command: /bin/bash
